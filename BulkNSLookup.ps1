@@ -12,7 +12,8 @@
     None
 
 .INPUTS
-  None
+  Name Server $nameserver
+  nslookup types $type
 
 .OUTPUTS
   Results file stored in $logfile variable
@@ -28,7 +29,8 @@
 
 #>
 
-# Removed a Change
+# Clear the Screen 
+Clear-Host
 
 # There will be errors -  Don't bother us with silly details, just keep going
 $ErrorActionPreference = 'SilentlyContinue'
@@ -36,11 +38,9 @@ $ErrorActionPreference = 'SilentlyContinue'
 # This is where we are going to put the results
 $logfile = "C:\Work\Domains\nslookup.txt"
 
-# If there is an old log, delete, we don't need it.
+# If there is an old log, delete, we don't need it.  Create a new one.
 Remove-Item $logfile
-
-#Pick a name server to query
-$nameserver = "AD101"
+New-Item $logfile
 
 <# This is a plain text file with a list of domains to parse.  On domain name per line.
 Example:
@@ -48,32 +48,50 @@ domain1.com
 domain2.net
 something.domain.org
 #>
-#$domains = get-content "C:\Work\Domains\domains.txt" 
-
-$Domains= Import-csv C:\work\DNS.txt -Delimiter "`t"
-<#    ForEach ($Object in $Domains) {
-             $Domain=$Object.Name
-             }
-#>
+$gcpath = "C:\Work\Domains\DNS.txt" 
+$domains = get-content $gcpath
 
 # Get Busy
-foreach ($Object in $domains){
+# Give instructions:
+Write-Host ""
+Write-Host "This script will read a list of domains from a plain text file located in  $gcpath. Edit the script to change this."
+Write-Host ""
+Write-Host "This is a plain text file with a list of domains to parse.  On domain name per line."
+Write-Host "Example:"
+Write-Host "domain1.com"
+Write-Host "domain2.net"
+Write-Host "something.domain.org"
+Write-Host ""
+Write-Host "Please make sure the file is in the correct location and is formatted correctly"
+Write-Host ""
+
+#Pick a name server to query
+$nameserver = Read-Host "Name Server to use (IP or FQDN) "
+Write-Host ""
+
+# Set the nslookup type
+$types = ("A"), ("ALL"), ("CNAME"), ("MX"), ("SRV"), ("TXT") 
+
+do {
+  $type = Read-Host "NSLookup Type ($types)"
+} 
+until ($types.like($type))
+
+
+" " | Out-File -filepath $logfile -Append -width 180
+"Using $nameserver for lookups." | Out-File -filepath $logfile -Append -width 180
+" " | Out-File -filepath $logfile -Append -width 180
+"Looking for records of type $type" | Out-File -filepath $logfile -Append -width 180
+" " | Out-File -filepath $logfile -Append -width 180
+
+foreach ($domain in $domains) {
  
-  $domain=$Object.Name | Out-file -filepath $logfile -Append -width 180
-
-  $NS=Resolve-DnsName $domain -type NS | Out-file -filepath $logfile -Append -width 180
-
-
-  # NSLOOKUP COMMANDS run one or all - examples are given
+  Resolve-DnsName $domain -type $type | Out-File -filepath $logfile -Append -width 180
   
-  #nslookup -querytype=ANY $domain $nameserver | Out-file -filepath $logfile -Append -width 180
-  #nslookup -querytype=A $domain $nameserver | Out-file -filepath $logfile -Append -width 180
-  #nslookup -querytype=CNAME $domain $nameserver | Out-file -filepath $logfile -Append -width 180
-  #nslookup -querytype=NS $domain $nameserver | Out-file -filepath $logfile -Append -width 180
-  #nslookup -querytype=MX $domain $nameserver | Out-file -filepath $logfile -Append -width 180
-  #nslookup -querytype=SRV $domain $nameserver | Out-file -filepath $logfile -Append -width 180
-  
-  "-----------------------------------------------------------------" | Out-file -filepath $logfile -Append -width 180
-  " " | Out-file -filepath $logfile -Append -width 180
-  }
-  Write-host "Job Complete please view $logfile"
+  "-----------------------------------------------------------------" | Out-File -filepath $logfile -Append -width 180
+  " " | Out-File -filepath $logfile -Append -width 180
+}
+
+get-content $logfile
+
+Write-host "Job Complete please view the log at $logfile for your results."
