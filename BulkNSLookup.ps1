@@ -36,11 +36,14 @@ Clear-Host
 $ErrorActionPreference = 'SilentlyContinue'
 
 # This is where we are going to put the results
-$logfile = "C:\Work\Domains\nslookup.txt"
+$logfile = ".\nslookup.txt"
 
 # If there is an old log, delete, we don't need it.  Create a new one.
-Remove-Item $logfile
-New-Item $logfile
+Remove-Item $logfile >$null
+New-Item $logfile >$null
+
+# The Location of the Text file contining the Domain Names to parse.
+$gcpath = ".\DNS.txt" 
 
 <# This is a plain text file with a list of domains to parse.  On domain name per line.
 Example:
@@ -48,7 +51,6 @@ domain1.com
 domain2.net
 something.domain.org
 #>
-$gcpath = "C:\Work\Domains\DNS.txt" 
 $domains = get-content $gcpath
 
 # Get Busy
